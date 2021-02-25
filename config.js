@@ -1,9 +1,9 @@
 module.exports = {
   mysqldb: {
     host: "localhost",
-    user: "root",
-    password: "Iti143.subu",
-    database: "database_1",
+    user: "phpmyadmin",
+    password: "manage",
+    database: "database_2",
     dateStrings: true
   }
   //  {
