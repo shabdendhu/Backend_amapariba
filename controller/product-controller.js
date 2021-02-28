@@ -4,6 +4,7 @@
 const db = require("../db");
 const response = require("../model/response");
 const Joi = require("joi");
+const { get_row } = require("../db");
 const reqSchema = {
 	addUpdateNewProduct: {
 		product_id: Joi.number(),
@@ -23,12 +24,49 @@ const reqSchema = {
 		user_id: Joi.number().required(),
 		product_id: Joi.number().required(),
 	},
+	makeNewProductQntOption: {
+		quantity: Joi.string().required(),
+		product_id: Joi.number().required(),
+		price: Joi.number().required(),
+		discount: Joi.number().required(),
+	},
+	makeSeasonsBest: {
+		is_popular: Joi.number().required(),
+		product_id: Joi.number().required(),
+	},
 };
 class product {
 	async get_products(req, res) {
-		let rows = await db.get_rows("select * from product", []);
-		res.json(response(true, "success", rows));
+		let rows = await db.get_rows(
+			"SELECT product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product;",
+			[]
+		);
+		// let discounted_price = [];
+		// for (let i = 0; i < rows.length; i++) {
+		// 	let discount = parseInt(rows[i].discount) / 100;
+		// 	let basic_price = rows[i].product_price;
+		// 	discounted_price.push(basic_price - basic_price * discount);
+		// }
+
+		res.json(response(true, "success", await rows));
 	}
+	// async get_product_offers(req, res) {
+	// 	let rows = await db.get_rows(
+	// 		"SELECT * from product INNER JOIN product_offers ON product.product_id=product_offers.product_id",
+	// 		[]
+	// 	);
+	// 	let discounted_price = [];
+
+	// 	for (let i = 0; i < rows.length; i++) {
+	// 		let discount = parseInt(rows[i].discount) / 100;
+	// 		let basic_price = rows[i].product_price;
+	// 		discounted_price.push(basic_price - basic_price * discount,);
+	// 	}
+	// 	const data={
+	// 		discounted_price
+	// 	}
+	// 	res.json(response(true, "success", await rows));
+	// }
 	async get_products_by_id(req, res) {
 		let rows = await db.get_row("select * from product where product_id=?", [
 			req.params.id,
@@ -98,8 +136,7 @@ class product {
 		if (result.error) {
 			res.json(response(false, result.error.message, result.error));
 		}
-		let q =
-			"update product set  product_name=?, product_price=?, unit_quantity=?,discount=?,image_url=?,product_category_id=?,default_amt=? where product_id=?";
+		let q = `update product set  product_name=?, product_price=?, unit_quantity=?,discount=?,image_url=?,product_category_id=?,default_amt=? where product_id=${req.params.id}`;
 
 		const update_res = await db.query(q, [
 			body.product_name,
@@ -109,7 +146,6 @@ class product {
 			body.image_url,
 			body.product_category_id,
 			body.default_amt,
-			body.product_id,
 		]);
 		if (update_res.affectedRows >= 1) {
 			res.json(response(true, "updated succeccfully", {}));
@@ -157,14 +193,33 @@ class product {
 	}
 	async get_product_qnt_option(req, res) {
 		let rows = await db.get_rows(
-			"SELECT * FROM product_qnt_options WHERE product_id = ?",
+			"SELECT id,quantity,product_id,price,discount,round( price-(price*discount)/100) as discounted_price FROM database_2.product_qnt_options where product_id=?",
 			[req.params.id]
 		);
 		res.json(response(true, "success", rows));
 	}
+	async make_product_qnt_option(req, res) {
+		const { body } = req;
+		const result = Joi.validate(body, reqSchema.makeNewProductQntOption);
+		if (result.error) {
+			res.json(response(false, result.error.message, result.error));
+		}
+		let q =
+			"INSERT INTO `database_2`.`product_qnt_options` ( `quantity`, `product_id`, `price`, `discount`) VALUES (?, ?, ?, ?)";
+
+		const inseart_res = await db.query(q, [
+			body.quantity,
+			body.product_id,
+			body.price,
+			body.discount,
+		]);
+		if (inseart_res.affectedRows >= 1) {
+			res.json(response(true, "updated succeccfully", {}));
+		}
+	}
 	async get_products_by_category(req, res) {
 		let rows = await db.get_rows(
-			"SELECT * FROM product WHERE product_category_id = ?",
+			"SELECT product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product where product_category_id=?",
 			[req.params.id]
 		);
 		res.json(response(true, "success", rows));
@@ -206,6 +261,33 @@ class product {
 			"SELECT * FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id"
 		);
 		res.json(response(true, "success", rows));
+	}
+	async make_seasons_best_items(req, res) {
+		const { body } = req;
+		const result = Joi.validate(body, reqSchema.makeSeasonsBest);
+		if (result.error) {
+			res.json(response(false, result.error.message, result.error));
+		}
+		let q =
+			"INSERT INTO `seasons_best` ( `is_popular`, `product_id`) VALUES ( ?, ?);";
+
+		const inseart_res = await db.query(q, [body.is_popular, body.product_id]);
+		if (inseart_res.affectedRows >= 1) {
+			res.json(response(true, "created succeccfully", {}));
+		}
+	}
+	async get_search_suggestion(req, res) {
+		const { body } = req;
+		let product_suggestion = await db.get_rows(
+			`SELECT product_name,product_id FROM product where product_name like "%${req.body.product_name}%" `
+		);
+		let recipe_suggesstion = await db.get_rows(
+			`SELECT name,id from recipes where name like "%${body.product_name}%"`
+		);
+		const suggestion = {
+			suggest: product_suggestion.concat(recipe_suggesstion),
+		};
+		res.json(response(true, "success", suggestion));
 	}
 }
 module.exports = new product();

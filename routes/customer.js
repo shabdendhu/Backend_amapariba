@@ -69,4 +69,7 @@ module.exports = (app, mainpath) => {
 	app
 		.route(mainpath + "/get-seasons-best-items")
 		.get(productController.get_seasons_best_items);
+	app
+		.route(mainpath + "/get-search-suggestion")
+		.post(productController.get_search_suggestion);
 };

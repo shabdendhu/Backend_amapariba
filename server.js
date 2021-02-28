@@ -15,7 +15,7 @@ var cors = require("cors");
 app.use(express.static("./public"));
 
 app.use(cors());
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 app.use("/custumer-api/products", product);
 app.use("/custumer-api/register", register);
 app.use("/custumer-api/users", users);
