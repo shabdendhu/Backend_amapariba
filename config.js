@@ -1,11 +1,11 @@
 module.exports = {
   mysqldb: {
     host: "localhost",
-    user: "phpmyadmin",
+    user: "workbench",
     password: "manage",
     database: "database_2",
-    dateStrings: true
-  }
+    dateStrings: true,
+  },
   //  {
   //   host: "localhost",
   //   user: "root",
