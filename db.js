@@ -3,11 +3,11 @@
 const mysql = require("mysql");
 const config = require("./config");
 var connection = mysql.createConnection(config.mysqldb);
-connection.connect(function(err) {
+connection.connect(function (err) {
   if (err) throw err;
 });
 const db = {
-  query: function(sql, params) {
+  query: function (sql, params) {
     return new Promise((resolve, reject) => {
       connection.query(sql, params, (err, result) => {
         if (err) {
@@ -16,7 +16,7 @@ const db = {
       });
     });
   },
-  get_row: function(sql, params) {
+  get_row: function (sql, params) {
     return new Promise((resolve, reject) => {
       connection.query(sql, params, (err, result) => {
         if (err || result.length == 0) {
@@ -25,7 +25,7 @@ const db = {
       });
     });
   },
-  get_rows: function(sql, params) {
+  get_rows: function (sql, params) {
     return new Promise((resolve, reject) => {
       connection.query(sql, params, (err, result) => {
         if (err || result.length == 0) {
@@ -34,9 +34,9 @@ const db = {
       });
     });
   },
-  build_query: function(sql, params) {
+  build_query: function (sql, params) {
     const query = connection.format(sql, params);
     return query;
-  }
+  },
 };
 module.exports = db;

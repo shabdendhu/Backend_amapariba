@@ -1,9 +1,11 @@
 module.exports = {
-	mysqldb: {
-		host: "127.0.0.1",
-		user: "admin",
-		password: "manage",
-		database: "database_3",
-		dateStrings: true,
-	},
+  mysqldb: {
+    host: "mysql-22641-0.cloudclusters.net",
+    port: "22656",
+    user: "kishan",
+    password: "Iti143.subu",
+    database: "database_2",
+    sslMode: "disabled",
+    dateStrings: true,
+  },
 };
