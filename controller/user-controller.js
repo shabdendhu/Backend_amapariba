@@ -8,9 +8,7 @@ const reqSchema = {
       .min(1000000000)
       .max(9999999999)
       .label("Mobile no."),
-    password: Joi.string()
-      .required()
-      .max(20)
+    password: Joi.string().required().max(20),
   },
   registerNewUser: {
     mobile_no: Joi.number()
@@ -18,10 +16,8 @@ const reqSchema = {
       .min(1000000000)
       .max(9999999999)
       .label("Mobile no."),
-    password: Joi.string()
-      .required()
-      .max(20)
-  }
+    password: Joi.string().required().max(20),
+  },
 };
 class User {
   async get_user_details(req, res) {
@@ -32,7 +28,7 @@ class User {
       return;
     }
     let rows = await db.get_rows("SELECT * FROM users WHERE mobile_no = ?", [
-      body.mobile_no
+      body.mobile_no,
     ]);
     if (rows.length > 0) {
       if (rows[0].password === body.password) {
@@ -52,12 +48,12 @@ class User {
       return;
     }
 
-    let exist_user = await db.get_rows(
+    let exist_user = await db.get_row(
       "SELECT * FROM users WHERE mobile_no = ?",
       [body.mobile_no]
     );
     if (exist_user.length > 0) {
-      if (exist_user[0].mobile_no === body.mobile_no) {
+      if (exist_user.mobile_no === body.mobile_no) {
         res.json(response(false, "Mobile number already exist", {}));
         return;
       }
@@ -65,10 +61,10 @@ class User {
     let q = "INSERT INTO users (`mobile_no`, `password`) VALUES (?,?);";
     const insert_res = await db.query(q, [body.mobile_no, body.password]);
     if (insert_res.affectedRows >= 1) {
-      let rows = await db.get_rows("SELECT * FROM users WHERE mobile_no = ?", [
-        body.mobile_no
+      let row = await db.get_row("SELECT * FROM users WHERE mobile_no = ?", [
+        body.mobile_no,
       ]);
-      res.json(response(true, "Created successfully", rows));
+      res.json(response(true, "Created successfully", row));
     }
   }
 }

@@ -3,6 +3,7 @@
 const mysql = require("mysql");
 const config = require("./config");
 var connection = mysql.createConnection(config.mysqldb);
+
 connection.connect(function (err) {
   if (err) throw err;
 });
@@ -11,6 +12,7 @@ const db = {
     return new Promise((resolve, reject) => {
       connection.query(sql, params, (err, result) => {
         if (err) {
+          console.log(err);
           resolve(null);
         } else resolve(result);
       });

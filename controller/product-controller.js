@@ -24,6 +24,11 @@ const reqSchema = {
   addToBasket: {
     user_id: Joi.number().required(),
     product_id: Joi.number().required(),
+    product_qnt: Joi.string().required(),
+    product_price: Joi.number().required(),
+    // product_count: Joi.number(),
+    product_name: Joi.string().required(),
+    image_url: Joi.string().required(),
   },
   makeNewProductQntOption: {
     quantity: Joi.number().required(),
@@ -39,7 +44,7 @@ const reqSchema = {
 };
 class product {
   async get_units(req, res) {
-    let rows = await db.get_rows("SELECT * FROM database_2.units;", []);
+    let rows = await db.get_rows("SELECT * FROM database_2.uints;", []);
     res.json(response(true, "success", rows));
   }
   async get_products(req, res) {
@@ -86,29 +91,60 @@ class product {
       return;
     }
     let q =
-      "INSERT INTO `database_2`.`basket` (`user_id`, `product_id`) VALUES (?,?);";
-    const insert_res = await db.query(q, [body.user_id, body.product_id]);
-    if (insert_res.affectedRows >= 1) {
-      res.json(response(true, "Created successfully", insert_res));
+      "INSERT INTO basket (`user_id`, `product_id`, `product_qnt`, `product_price`, `product_name`, `image_url`) VALUES (?,?, ?, ?, ?,?);";
+    const insert_res = await db.query(q, [
+      body.user_id,
+      body.product_id,
+      body.product_qnt,
+      body.product_price,
+      body.product_name,
+      body.image_url,
+    ]);
+    console.log(insert_res.insertId);
+    if (insert_res) {
+      if (insert_res.affectedRows >= 1) {
+        let row = await db.get_row("SELECT * FROM basket WHERE id = ?", [
+          insert_res.insertId,
+        ]);
+        res.json(response(true, "Created successfully", row));
+      }
     }
   }
   async remove_product_from_basket(req, res) {
     const { body } = req;
+    // console.log(body);
+    // let row = await db.get_row(
+    //   `SELECT id FROM basket where product_id=${body.product_id} and product_qnt=${body.product_qnt} and user_id=${body.user_id};`
+    // );
+
+    // if (rows.length > 0) {
+    //   console.log(rows);
+    // const delete_req = await db.query("DELETE FROM `basket` WHERE `id`=?", [
+    //   rows[0].id,
+    // ]);
     const delete_req = await db.query("DELETE FROM `basket` WHERE `id`=?", [
-      body.id,
+      body.item_id,
     ]);
-    console.log(delete_req.affectedRows);
+    // console.log()
     if (delete_req.affectedRows >= 1) {
-      res.json(response(true, "deleted succeccfully", {}));
+      res.json(response(true, "deleted succeccfully", delete_req));
     } else {
       res.json(response(true, "something went wrong", {}));
     }
+    // } else {
+    //   res.json(response(true, "Product Doesnot Exist", {}));
+    // }
+    // console.log(delete_req);
   }
   async get_basket_items(req, res) {
     const { body } = req;
     console.log(body);
+    // let basket_rows = await db.get_rows(
+    //   "SELECT * FROM product INNER join basket ON product.product_id=basket.product_id where user_id=?",
+    //   [body.user_id]
+    // );
     let basket_rows = await db.get_rows(
-      "SELECT * FROM product INNER join basket ON product.product_id=basket.product_id where user_id=?",
+      "SELECT product_id as id,id as item_id,image_url as image,product_name as name,product_price as price,product_qnt as amount FROM  basket where user_id=?",
       [body.user_id]
     );
     res.json(response(true, "success", basket_rows));
@@ -145,6 +181,7 @@ class product {
   }
   async get_all_product_category(req, res) {
     let rows = await db.get_rows("select * from product_category");
+    // console.log(rows);
     res.json(response(true, "success", rows));
   }
   async get_product_category(req, res) {
@@ -202,7 +239,7 @@ class product {
   }
   async get_product_qnt_option(req, res) {
     let rows = await db.get_rows(
-      "SELECT *,round( product_qnt_options.price-(product_qnt_options.price*product_qnt_options.discount)/100) as discounted_price FROM product_qnt_options INNER join units ON product_qnt_options.unit_id=units.unit_id where product_qnt_options.product_id=?",
+      "SELECT *,round( product_qnt_options.price-(product_qnt_options.price*product_qnt_options.discount)/100) as discounted_price FROM product_qnt_options INNER join uints ON product_qnt_options.unit_id=uints.id where product_qnt_options.product_id=?",
       [req.params.id]
     );
     res.json(response(true, "success", rows));
