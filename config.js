@@ -5,7 +5,7 @@ module.exports = {
     user: "kishan",
     password: "Iti143.subu",
     database: "database_2",
-    // sslMode: "disabled",
+    sslMode: "disabled",
     dateStrings: true,
   },
   // mysqldb: {
