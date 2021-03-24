@@ -41,6 +41,10 @@ const reqSchema = {
     is_popular: Joi.number().required(),
     product_id: Joi.number().required(),
   },
+  editSeasonsBest: {
+    is_popular: Joi.number().required(),
+    id: Joi.number().required(),
+  },
 };
 class product {
   async get_units(req, res) {
@@ -314,11 +318,30 @@ class product {
     }
   }
   async get_seasons_best_items(req, res) {
-    let rows = await db.get_rows(
-      "SELECT * FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id where is_popular=?",
-      [req.params.is_popular]
-    );
+    let rows = [];
+    if (req.params.is_popular) {
+      rows = await db.get_rows(
+        "SELECT product.product_id,product.product_name,product.image_url FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id where is_popular=?",
+        [req.params.is_popular]
+      );
+    } else {
+      rows = await db.get_rows(
+        "SELECT product.product_id,product.product_name,product.image_url FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id"
+      );
+    }
+
     res.json(response(true, "success", rows));
+  }
+  async delete_seasons_best_items(req, res) {
+    const { body } = req;
+    let deleteRes = await db.query("DELETE FROM `seasons_best` WHERE `id`=?", [
+      body.id,
+    ]);
+    if (deleteRes) {
+      if (deleteRes.affectedRows >= 1) {
+        res.json(response(true, "deleted succeccfully", {}));
+      }
+    }
   }
   async make_seasons_best_items(req, res) {
     const { body } = req;
@@ -334,6 +357,27 @@ class product {
       res.json(response(true, "created succeccfully", {}));
     }
   }
+  async edit_seasons_best_items(req, res) {
+    const { body } = req;
+    const result = Joi.validate(body, reqSchema.editSeasonsBest);
+    if (result.error) {
+      res.json(response(false, result.error.message, result.error));
+    }
+
+    const update_res = await db.query(
+      `UPDATE seasons_best SET is_popular=${body.is_popular} WHERE id=${body.id};`
+    );
+    if (update_res.affectedRows >= 1) {
+      res.json(response(true, "updated succeccfully", update_res));
+    }
+  }
+  async get_seasons_best_items_by_product_id(req, res) {
+    let rows = await db.get_row(
+      "SELECT product.product_id,product.product_name,product.image_url,seasons_best.is_popular,seasons_best.id FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id where product.product_id=?",
+      [req.params.product_id]
+    );
+    res.json(response(true, "success", rows ? rows : []));
+  }
   async get_search_suggestion(req, res) {
     const { body } = req;
     let product_suggestion = await db.get_rows(
@@ -347,6 +391,31 @@ class product {
       recipeSuggest: recipe_suggesstion,
     };
     res.json(response(true, "success", suggestion));
+  }
+  async get_top_deals(req, res) {
+    let top_deals = await db.get_rows(
+      "SELECT product.product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product join top_deals on product.product_id=top_deals.product_id"
+    );
+    res.json(response(true, "success", top_deals));
+  }
+  async make_product_top_deal(req, res) {
+    const { body } = req;
+    let top_deal = await db.get_rows(
+      "INSERT INTO `database_2`.`top_deals` ( `product_id`) VALUES (?)",
+      [body.product_id]
+    );
+    res.json(response(true, "success", top_deal));
+  }
+  async delete_product_from_top_deals(req, res) {
+    const { body } = req;
+    let deleteRes = await db.query("DELETE FROM `top_deals` WHERE `id`=?", [
+      body.id,
+    ]);
+    if (deleteRes) {
+      if (deleteRes.affectedRows >= 1) {
+        res.json(response(true, "deleted succeccfully", {}));
+      }
+    }
   }
 }
 module.exports = new product();

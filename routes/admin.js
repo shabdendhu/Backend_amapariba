@@ -53,6 +53,12 @@ module.exports = (app, mainpath) => {
   app
     .route(mainpath + "/make-seasons-best-items")
     .post(productController.make_seasons_best_items);
+  app
+    .route(mainpath + "/get-seasons-best-items/:is_popular")
+    .get(productController.get_seasons_best_items);
+  app
+    .route(mainpath + "/get-seasons-best-items")
+    .get(productController.get_seasons_best_items);
   //
   app.route(mainpath + "/get-all-orders").get(orderController.get_all_orders);
   app.route(mainpath + "/make-new-order").post(orderController.make_new_order);
@@ -60,4 +66,19 @@ module.exports = (app, mainpath) => {
   app
     .route(mainpath + "/get-product-qnt-options/:id")
     .get(productController.get_product_qnt_option);
+  app
+    .route(mainpath + "/get-seasons-best-items-by-product-id/:product_id")
+    .get(productController.get_seasons_best_items_by_product_id);
+  app
+    .route(mainpath + "/edit-seasons-best-items")
+    .post(productController.edit_seasons_best_items);
+  app
+    .route(mainpath + "/delete-seasons-best-items")
+    .post(productController.delete_seasons_best_items);
+  app
+    .route(mainpath + "/make-product-top-deal")
+    .post(productController.make_product_top_deal);
+  app
+    .route(mainpath + "/delete-product-from-top-deals")
+    .post(productController.delete_product_from_top_deals);
 };

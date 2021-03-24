@@ -24,8 +24,8 @@ module.exports = (app, mainpath) => {
     .route(mainpath + "/get-products-by-category/:id")
     .get(productController.get_products_by_category);
   app
-    .route(mainpath + "/get-users-details")
-    .post(userController.get_user_details);
+    .route(mainpath + "/login-with-password")
+    .post(userController.login_with_password);
   app
     .route(mainpath + "/register-new-user")
     .post(userController.register_new_user);
@@ -58,7 +58,17 @@ module.exports = (app, mainpath) => {
     .route(mainpath + "/get-seasons-best-items/:is_popular")
     .get(productController.get_seasons_best_items);
   app
+    .route(mainpath + "/get-seasons-best-items")
+    .get(productController.get_seasons_best_items);
+  app
     .route(mainpath + "/get-search-suggestion")
     .post(productController.get_search_suggestion);
   app.route(mainpath + "/get-units").get(productController.get_units);
+  app.route(mainpath + "/get-top-deals").get(productController.get_top_deals);
+  app
+    .route(mainpath + "/update-user-details/:id")
+    .post(userController.update_user_details);
+  app
+    .route(mainpath + "/get-user-details")
+    .post(userController.get_user_details);
 };
