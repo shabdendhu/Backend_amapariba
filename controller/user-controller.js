@@ -38,20 +38,20 @@ class User {
     let row = await db.get_row("SELECT * FROM users WHERE mobile_no = ?", [
       body.mobile_no,
     ]);
-    if (row.length > 0) {
+    if (row !== null) {
       if (row.password === body.password) {
         res.json(response(true, "success", row));
       } else {
         res.json(response(false, "username & password doesn't match"));
       }
     } else {
-      res.json(response(true, "Please enter correct username", row));
+      res.json(response(false, "Please enter correct mobile number", row));
     }
   }
   async get_user_details(req, res) {
     const { body } = req;
     let row = await db.get_row(
-      "SELECT mobile_no,email,name,gender,date_of_birth  FROM users WHERE id = ?",
+      "SELECT mobile_no,email,name,gender,date_of_birth,img  FROM users WHERE id = ?",
       [body.id]
     );
     res.json(response(true, "success", row));
@@ -68,24 +68,26 @@ class User {
       "SELECT * FROM users WHERE mobile_no = ?",
       [body.mobile_no]
     );
-    if (exist_user.length > 0) {
+    // console.log(exist_user.id);
+    if (exist_user !== null) {
       if (exist_user.mobile_no === body.mobile_no) {
         res.json(response(false, "Mobile number already exist", {}));
         return;
       }
-    }
-    let q = "INSERT INTO users (`mobile_no`, `password`) VALUES (?,?);";
-    const insert_res = await db.query(q, [body.mobile_no, body.password]);
-    if (insert_res.affectedRows >= 1) {
-      let row = await db.get_row("SELECT * FROM users WHERE mobile_no = ?", [
-        body.mobile_no,
-      ]);
-      const data = {
-        userRegister: {
-          row,
-        },
-      };
-      res.json(response(true, "Created successfully", data));
+    } else {
+      let q = "INSERT INTO users (`mobile_no`, `password`) VALUES (?,?);";
+      const insert_res = await db.query(q, [body.mobile_no, body.password]);
+      if (insert_res.affectedRows >= 1) {
+        let row = await db.get_row("SELECT * FROM users WHERE mobile_no = ?", [
+          body.mobile_no,
+        ]);
+        const data = {
+          userRegister: {
+            row,
+          },
+        };
+        res.json(response(true, "Created successfully", data));
+      }
     }
   }
   async update_user_details(req, res) {
@@ -109,6 +111,16 @@ class User {
     if (update_res.affectedRows >= 1) {
       res.json(response(true, "updated succeccfully", {}));
     }
+  }
+  async user_history(req, res) {
+    const { body } = req;
+    let rows = await db.get_rows(
+      `SELECT product.product_id,product.product_name,product.unit_quantity,product.image_url,product.product_category_id,product.default_amt, ROUND(product.product_price - (product.product_price*product.discount)/100) as discounted_price,product.product_price,product.discount FROM product inner join basket on basket.product_id=product.product_id where user_id=${body.user_id}`
+    );
+    rows.forEach((element) => {
+      element.image_url = `/product_image/${element.image_url}`;
+    });
+    res.json(response(true, "success", rows));
   }
 }
 module.exports = new User();

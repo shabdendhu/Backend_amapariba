@@ -5,6 +5,13 @@ const db = require("../db");
 const response = require("../model/response");
 const Joi = require("joi");
 const { get_row } = require("../db");
+const {
+  get_formdata,
+  get_current_datetime,
+} = require("../library/commonmethords");
+const path = require("path");
+// import fs, { readdirSync, readFileSync } from 'fs';
+const fs = require("fs");
 const reqSchema = {
   addUpdateNewProduct: {
     product_id: Joi.number(),
@@ -56,6 +63,9 @@ class product {
       "SELECT product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product;",
       []
     );
+    rows.forEach((element) => {
+      element.image_url = `/product_image/${element.image_url}`;
+    });
     res.json(response(true, "success", rows));
   }
 
@@ -66,25 +76,36 @@ class product {
     res.json(response(true, "success", rows));
   }
   async add_new_product(req, res) {
-    const { body } = req;
-    const result = Joi.validate(body, reqSchema.addUpdateNewProduct);
+    const { fields, files } = await get_formdata(req);
+    const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
       res.json(response(false, result.error.message, result.error));
       return;
     }
+    let oldPath = files.image.path;
+    let now = get_current_datetime();
+    now = now.replace(/ /g, "-");
+    now = now.replace(/:/g, "-");
+    let image_name = `product_image__${now}${path.extname(files.image.name)}`;
+    let newPath = `${path.dirname(
+      require.main.filename
+    )}/public/product_image/${image_name}`;
+
     let q =
       "insert into product ( `product_name`, `product_price`, `unit_quantity`,`discount`,`image_url`,`product_category_id`,`default_amt`) values(?,?,?,?,?,?,?)";
     const insert_res = await db.query(q, [
-      body.product_name,
-      body.product_price,
-      body.unit_quantity,
-      body.discount,
-      body.image_url,
-      body.product_category_id,
-      body.default_amt,
+      fields.product_name,
+      fields.product_price,
+      fields.unit_quantity,
+      fields.discount,
+      image_name,
+      fields.product_category_id,
+      fields.default_amt,
     ]);
     if (insert_res.affectedRows >= 1) {
+      fs.rename(oldPath, newPath, (err) => {});
       res.json(response(true, "Created successfully", insert_res));
+      return;
     }
   }
   async add_product_to_basket(req, res) {
@@ -126,10 +147,12 @@ class product {
     // const delete_req = await db.query("DELETE FROM `basket` WHERE `id`=?", [
     //   rows[0].id,
     // ]);
-    const delete_req = await db.query("DELETE FROM `basket` WHERE `id`=?", [
-      body.item_id,
-    ]);
-    // console.log()
+    const delete_req = await db.query(
+      "UPDATE `basket` SET `status`='inactive' WHERE `id`=?",
+      [body.item_id]
+    );
+    console.log(body.item_id);
+    console.log(delete_req);
     if (delete_req.affectedRows >= 1) {
       res.json(response(true, "deleted succeccfully", delete_req));
     } else {
@@ -148,37 +171,77 @@ class product {
     //   [body.user_id]
     // );
     let basket_rows = await db.get_rows(
-      "SELECT product_id as id,id as item_id,image_url as image,product_name as name,product_price as price,product_qnt as amount FROM  basket where user_id=?",
-      [body.user_id]
+      `SELECT product_id as id,id as item_id,image_url as image,product_name as name,product_price as price,product_qnt as amount FROM  basket where user_id=${body.user_id} and status="active"`
     );
     res.json(response(true, "success", basket_rows));
   }
   async update_product(req, res) {
-    const { body } = req;
-    const result = Joi.validate(body, reqSchema.addUpdateNewProduct);
+    const { fields, files } = await get_formdata(req);
+    // const { body } = req;
+    let image_path = await db.get_row(
+      `SELECT image_url FROM database_2.product where product_id=${req.params.id};`
+    );
+    const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
       res.json(response(false, result.error.message, result.error));
     }
+    let oldPath = files.image.path;
+    let now = get_current_datetime();
+    now = now.replace(/ /g, "-");
+    now = now.replace(/:/g, "-");
+    let image_name = `product_image__${now}${path.extname(files.image.name)}`;
+    let newPath = `${path.dirname(
+      require.main.filename
+    )}/public/product_image/${image_name}`;
+
     let q = `update product set  product_name=?, product_price=?, unit_quantity=?,discount=?,image_url=?,product_category_id=?,default_amt=? where product_id=${req.params.id}`;
 
     const update_res = await db.query(q, [
-      body.product_name,
-      body.product_price,
-      body.unit_quantity,
-      body.discount,
-      body.image_url,
-      body.product_category_id,
-      body.default_amt,
+      fields.product_name,
+      fields.product_price,
+      fields.unit_quantity,
+      fields.discount,
+      image_name,
+      fields.product_category_id,
+      fields.default_amt,
     ]);
     if (update_res.affectedRows >= 1) {
+      if (Object.keys(files).length !== 0) {
+        let old_image = image_path;
+        old_image = `${path.dirname(
+          require.main.filename
+        )}/public/product_image/${old_image}`;
+        if (fs.existsSync(old_image)) {
+          fs.unlink(old_image, (err) => {});
+        }
+        fs.rename(oldPath, newPath, (err) => {});
+      }
       res.json(response(true, "updated succeccfully", {}));
     }
   }
   async delete_product(req, res) {
     const product_id = req.params.product_id;
+
+    let image_path = await db.get_row(
+      `SELECT image_url FROM product where product_id=${product_id};`
+    );
+    if (!image_path) {
+      res.json(response(false, "Invalid product_id", {}));
+      return;
+    }
     let deleteRes = await db.query("DELETE FROM product WHERE product_id=?", [
       product_id,
     ]);
+    let old_image = image_path.image_url;
+    old_image = `${path.dirname(
+      require.main.filename
+    )}/public/product_image/${old_image}`;
+    console.log(old_image);
+    if (fs.existsSync(old_image)) {
+      fs.unlink(old_image, (err) => {
+        console.log(err);
+      });
+    }
     if (deleteRes.affectedRows >= 1) {
       res.json(response(true, "deleted succeccfully", {}));
     }
@@ -282,6 +345,9 @@ class product {
       "SELECT product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product where product_category_id=?",
       [req.params.id]
     );
+    rows.forEach((element) => {
+      element.image_url = `/product_image/${element.image_url}`;
+    });
     res.json(response(true, "success", rows));
   }
   async get_product_by_name(req, res) {
@@ -324,10 +390,16 @@ class product {
         "SELECT product.product_id,product.product_name,product.image_url FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id where is_popular=?",
         [req.params.is_popular]
       );
+      rows.forEach((element) => {
+        element.image_url = `/product_image/${element.image_url}`;
+      });
     } else {
       rows = await db.get_rows(
         "SELECT product.product_id,product.product_name,product.image_url FROM product INNER join seasons_best ON product.product_id=seasons_best.product_id"
       );
+      rows.forEach((element) => {
+        element.image_url = `/product_image/${element.image_url}`;
+      });
     }
 
     res.json(response(true, "success", rows));
@@ -396,6 +468,9 @@ class product {
     let top_deals = await db.get_rows(
       "SELECT product.product_id,product_name,unit_quantity,image_url,product_category_id,default_amt, ROUND(product_price - (product_price*discount)/100) as discounted_price,product_price,discount FROM database_2.product join top_deals on product.product_id=top_deals.product_id"
     );
+    top_deals.forEach((element) => {
+      element.image_url = `/product_image/${element.image_url}`;
+    });
     res.json(response(true, "success", top_deals));
   }
   async make_product_top_deal(req, res) {
@@ -416,6 +491,17 @@ class product {
         res.json(response(true, "deleted succeccfully", {}));
       }
     }
+  }
+  async upload_product_image(req, res) {
+    const { fields, files } = await get_formdata(req);
+    let oldPath = files.image.path;
+    let now = get_current_datetime();
+    now = now.replace(/ /g, "-");
+    now = now.replace(/:/g, "-");
+    let image_name = `product_image__${now}${path.extname(files.image.name)}`;
+    let newPath = `${path.dirname(require.main.filename)}/public/${image_name}`;
+
+    fs.rename(oldPath, newPath, (err) => {});
   }
 }
 module.exports = new product();

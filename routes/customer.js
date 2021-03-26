@@ -71,4 +71,5 @@ module.exports = (app, mainpath) => {
   app
     .route(mainpath + "/get-user-details")
     .post(userController.get_user_details);
+  app.route(mainpath + "/user-history").post(userController.user_history);
 };

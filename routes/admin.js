@@ -81,4 +81,7 @@ module.exports = (app, mainpath) => {
   app
     .route(mainpath + "/delete-product-from-top-deals")
     .post(productController.delete_product_from_top_deals);
+  app
+    .route(mainpath + "/upload-product-image")
+    .post(productController.upload_product_image);
 };
