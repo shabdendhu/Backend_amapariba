@@ -77,6 +77,9 @@ class product {
   }
   async add_new_product(req, res) {
     const { fields, files } = await get_formdata(req);
+    console.log(files);
+    console.log(files.image);
+
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
       res.json(response(false, result.error.message, result.error));
@@ -178,6 +181,9 @@ class product {
   async update_product(req, res) {
     const { fields, files } = await get_formdata(req);
     // const { body } = req;
+    console.log(files);
+    console.log(files.image);
+
     let image_path = await db.get_row(
       `SELECT image_url FROM database_2.product where product_id=${req.params.id};`
     );

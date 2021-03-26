@@ -114,6 +114,7 @@ class User {
   }
   async user_history(req, res) {
     const { body } = req;
+    // console.log(window.location.hostname);
     let rows = await db.get_rows(
       `SELECT product.product_id,product.product_name,product.unit_quantity,product.image_url,product.product_category_id,product.default_amt, ROUND(product.product_price - (product.product_price*product.discount)/100) as discounted_price,product.product_price,product.discount FROM product inner join basket on basket.product_id=product.product_id where user_id=${body.user_id}`
     );
