@@ -77,8 +77,8 @@ class product {
   }
   async add_new_product(req, res) {
     const { fields, files } = await get_formdata(req);
-    console.log(files);
-    console.log(files.image);
+    // console.log(files);
+    console.log(files.image.path);
 
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
@@ -181,11 +181,17 @@ class product {
   async update_product(req, res) {
     const { fields, files } = await get_formdata(req);
     // const { body } = req;
-    console.log(files);
-    console.log(files.image);
+    // console.log(files);
 
     let image_path = await db.get_row(
       `SELECT image_url FROM database_2.product where product_id=${req.params.id};`
+    );
+    console.log(
+      fs.existsSync(
+        `${path.dirname(
+          require.main.filename
+        )}/public/product_image/${old_image}`
+      )
     );
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
