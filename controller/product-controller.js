@@ -187,11 +187,7 @@ class product {
       `SELECT image_url FROM database_2.product where product_id=${req.params.id};`
     );
     console.log(
-      fs.existsSync(
-        `${path.dirname(
-          require.main.filename
-        )}/public/product_image/${image_path}`
-      )
+      fs.existsSync(`${__dirname}/public/product_image/${image_path}`)
     );
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
