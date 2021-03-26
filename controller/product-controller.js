@@ -190,7 +190,7 @@ class product {
       fs.existsSync(
         `${path.dirname(
           require.main.filename
-        )}/public/product_image/${old_image}`
+        )}/public/product_image/${image_path}`
       )
     );
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
