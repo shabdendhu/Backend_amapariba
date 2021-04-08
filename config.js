@@ -3,7 +3,7 @@ module.exports = {
     host: "mysql-22641-0.cloudclusters.net",
     port: "22656",
     user: "kishan",
-    password: "Iti143.subu",
+    password: "********",
     database: "database_2",
     sslMode: "disabled",
     dateStrings: true,
