@@ -180,8 +180,8 @@ class product {
   }
   async update_product(req, res) {
     const { fields, files } = await get_formdata(req);
-    // const { body } = req;
-    // console.log(files);
+    const { body } = req;
+    console.log(body);
 
     let image_path = await db.get_row(
       `SELECT image_url FROM database_2.product where product_id=${req.params.id};`
@@ -189,6 +189,7 @@ class product {
     console.log(
       fs.existsSync(`${__dirname}/public/product_image/${image_path}`)
     );
+
     const result = Joi.validate(fields, reqSchema.addUpdateNewProduct);
     if (result.error) {
       res.json(response(false, result.error.message, result.error));
